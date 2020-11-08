@@ -38,12 +38,13 @@ async def exchange_code(code: str):
 def api_validator():
     """ Validate if user can use invite API """
     auth = request.headers.get("Authorization")
-    author_id = request.headers.get("author_id")
+    author_id = request.headers.get("x-responsible")
+    print(request.headers)
     if not auth:
         abort(400, "Missing Authorization")
     if not author_id:
-        abort(400, "Missing author_id")
-    discord_id_validator(author_id, "author_id")
+        abort(400, "Missing x-responsible")
+    discord_id_validator(author_id, "x-responsible")
     if auth != config["backend_api_token"]:
         abort(403, "Access denied...")
 
@@ -79,7 +80,7 @@ async def index():
 async def api_grant(guild_id):
     api_validator()
     discord_id_validator(guild_id, "guild_id")
-    author_id = request.headers.get("author_id")
+    author_id = request.headers.get("x-responsible")
 
     data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
     if data:
@@ -100,7 +101,7 @@ async def api_grant(guild_id):
 async def api_revoke(guild_id):
     api_validator()
     discord_id_validator(guild_id, "guild_id")
-    author_id = request.headers.get("author_id")
+    author_id = request.headers.get("x-responsible")
 
     data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
     if not data:
