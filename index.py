@@ -71,8 +71,9 @@ def whitelisted_guild(guild_id: int):
 
 @app.route("/")
 async def index():
-    return await render_template("index.html",
-        client_id=config["client_id"], redirect=config["redirect_uri"]
+    return redirect(
+        f"https://discord.com/oauth2/authorize?client_id={config['client_id']}"
+        f"&scope=bot&redirect_uri={config['redirect_uri']}&prompt=consent&response_type=code"
     )
 
 
@@ -149,6 +150,14 @@ async def success():
     )
 
 
+@app.route("/error")
+async def error():
+    guild_id = request.args.get("guild_id")
+    if not guild_id:
+        abort(400)
+    return await render_template("error.html", guild_id=guild_id)
+
+
 @app.route("/callback")
 async def callback_discord():
     code = request.args.get("code")
@@ -160,7 +169,7 @@ async def callback_discord():
 
     whitelist_check = whitelisted_guild(guild_id)
     if not whitelist_check:
-        return abort(403, "This server is not whitelisted...")
+        return redirect(f"/error?guild_id={guild_id}")
 
     data = await exchange_code(code)
 
