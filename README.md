@@ -7,5 +7,10 @@ This application (website) is used to validate if xelA is allowed to be invited 
 3. Rename config.json.example to config.json and fill out needed information
 4. Boot the website up
 
+# API endpoints
+GET /api/grant/:guild_id | Grant GuildID access to invite bot
+GET /api/revoke/:guild_id | Revoke GuildID access to invite bot
+GET /api/guilds | Show all Guilds
+
 # Support
 You can find me at https://discord.gg/DpxkY3x if you need help, but keep in mind that I won't spoonfeed you...
