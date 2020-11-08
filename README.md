@@ -8,11 +8,11 @@ This application (website) is used to validate if xelA is allowed to be invited 
 4. Boot the website up
 
 # API endpoints
-X-Responsible: Your AuthorID
+X-Responsible: Your AuthorID<br>
 Authorization: backend_api_token from config.json
 
-GET /api/grant/:guild_id | Grant GuildID access to invite bot
-GET /api/revoke/:guild_id | Revoke GuildID access to invite bot
+GET /api/grant/:guild_id | Grant GuildID access to invite bot<br>
+GET /api/revoke/:guild_id | Revoke GuildID access to invite bot<br>
 GET /api/guilds | Show all Guilds
 
 # Support
