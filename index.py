@@ -39,7 +39,6 @@ def api_validator():
     """ Validate if user can use invite API """
     auth = request.headers.get("Authorization")
     author_id = request.headers.get("x-responsible")
-    print(request.headers)
     if not auth:
         abort(400, "Missing Authorization")
     if not author_id:
