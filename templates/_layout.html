@@ -1,0 +1,19 @@
+<html>
+  <head>
+    <title>{{ title | default('xelA Invite') }}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"/>
+    <meta name="theme-color" content="#14bae4">
+  </head>
+  <body class="github-font-standard">
+    <section class="fullscreen">
+      <div class="background"></div>
+      <div class="center-object">
+        <section class="me">{% block content %}{% endblock %}</section>
+      </div>
+    </section>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "client_id": "13371337133713371337",
+  "client_secret": "secret_text_yes",
+  "redirect_uri": "http://localhost:8080/callback",
+  "api_endpoint": "https://discord.com/api/v7",
+  "backend_api_token": "just_smash_your_keyboard_lol",
+  "scopes": "identify connections",
+  "support_server": "https://discord.gg/DpxkY3x",
+  "bot_website": "https://xela.dev",
+  "port": 8080
+}

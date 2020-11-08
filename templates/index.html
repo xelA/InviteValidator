@@ -1,0 +1,12 @@
+{% extends "_layout.html" %}
+{% block content %}
+<section class="me">
+  <img draggable="false" src="{{ url_for('static', filename='avatar.png') }}" class="image-title">
+  <p class="undertitle">xelA Invite Validator</p>
+</section>
+<div class="buttons">
+  <a href="https://discord.com/oauth2/authorize?client_id={{ client_id }}&scope=bot&redirect_uri={{ redirect }}&prompt=consent&response_type=code" class="btn emerald-border">
+    Invite xelA
+  </a>
+</div>
+{% endblock %}

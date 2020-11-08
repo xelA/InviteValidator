@@ -1,0 +1,17 @@
+{% extends "_layout.html" %}
+{% block content %}
+{% if icon %}
+<img draggable="false" src="https://cdn.discordapp.com/icons/{{id}}/{{icon}}.{{icon_type}}?size=1024" class="image-title">
+{% endif %}
+<div class="center-text">
+  <h4 class="undertitle" style="font-weight: normal;">
+    Successfully added <b class="emerald-text">xelA</b> to:<br>
+    <b>{{ name }}</b>
+  </h4>
+  <p style="margin-top: .5em">
+    If you need help, visit <a href="{{ support }}" target="_blank">{{ support }}</a> or use <code>/help</code>
+    <br>
+    To access settings, visit <a href="{{ website }}" target="_blank">{{ website }}</a> to view the dashboard ❤
+  </p>
+</div>
+{% endblock %}

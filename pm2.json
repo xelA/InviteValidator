@@ -1,0 +1,9 @@
+
+{
+  "apps": [
+    {
+      "name":"InviteValidator",
+      "script":"start.sh"
+    }
+  ]
+}
