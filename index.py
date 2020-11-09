@@ -88,7 +88,7 @@ async def api_grant(guild_id):
             "UPDATE whitelist SET granted_by=?, revoked_by=null, whitelist=true WHERE guild_id=?",
             (int(author_id), int(guild_id))
         )
-        return json_response("Success", "GuildID has been granted invite access, again.")
+        return json_response("Successfully granted", "GuildID has been granted invite access, again.")
     else:
         db.execute(
             "INSERT INTO whitelist (guild_id, granted_by) VALUES (?, ?)",
