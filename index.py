@@ -105,7 +105,7 @@ async def api_revoke(guild_id):
 
     data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
     if not data:
-        return "null"
+        return json_response("Task refused", "GuildID is not even listed inside the API...")
 
     db.execute(
         "UPDATE whitelist SET revoked_by=?, whitelist=false WHERE guild_id=?",
