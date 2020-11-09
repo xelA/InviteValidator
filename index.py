@@ -134,7 +134,7 @@ async def api_guild_list():
 async def api_guild_info(guild_id):
     api_validator()
     discord_id_validator(guild_id, "guild_id")
-    data = db.fetch("SELECT * FROM whitelist WHERE guild_id=?")
+    data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
     if not data:
         return jsonify({
             "guild_id": None, "whitelist": None,
