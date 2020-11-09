@@ -87,13 +87,13 @@ async def api_grant(guild_id):
             "UPDATE whitelist SET granted_by=?, revoked_by=null, whitelist=true WHERE guild_id=?",
             (int(author_id), int(guild_id))
         )
-        return json_response("Success", "GuildID has been whitelisted again")
+        return json_response("Success", "GuildID has been granted invite access, again.")
     else:
         db.execute(
             "INSERT INTO whitelist (guild_id, granted_by) VALUES (?, ?)",
             (int(guild_id), int(author_id))
         )
-        return json_response("Success", "GuildID has been whitelisted")
+        return json_response("Successfully granted", "GuildID has been granted invite access")
 
 
 @app.route("/api/revoke/<guild_id>")
@@ -110,7 +110,7 @@ async def api_revoke(guild_id):
         "UPDATE whitelist SET revoked_by=?, whitelist=false WHERE guild_id=?",
         (int(author_id), int(guild_id))
     )
-    return json_response("Success", "GuildID has been blacklisted")
+    return json_response("Successfully revoked", "GuildID has been revoked invite access")
 
 
 @app.route("/api/guilds")
@@ -127,6 +127,25 @@ async def api_guild_list():
         })
 
     return jsonify(guild_list)
+
+
+@app.route("/api/guilds/<guild_id>")
+async def api_guild_info(guild_id):
+    api_validator()
+    discord_id_validator(guild_id, "guild_id")
+    data = db.fetch("SELECT * FROM whitelist WHERE guild_id=?")
+    if not data:
+        return jsonify({
+            "guild_id": None, "whitelist": None,
+            "granted_by": None, "revoked_by": None
+        })
+
+    return jsonify({
+        "guild_id": data["guild_id"],
+        "whitelist": True if data["whitelist"] == 1 else False,
+        "granted_by": data["granted_by"],
+        "revoked_by": data["revoked_by"]
+    })
 
 
 @app.route("/success")
