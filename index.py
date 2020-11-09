@@ -38,12 +38,12 @@ async def exchange_code(code: str):
 def api_validator():
     """ Validate if user can use invite API """
     auth = request.headers.get("Authorization")
-    author_id = request.headers.get("author_id")
+    author_id = request.headers.get("x-responsible")
     if not auth:
         abort(400, "Missing Authorization")
     if not author_id:
-        abort(400, "Missing author_id")
-    discord_id_validator(author_id, "author_id")
+        abort(400, "Missing x-responsible")
+    discord_id_validator(author_id, "x-responsible")
     if auth != config["backend_api_token"]:
         abort(403, "Access denied...")
 
@@ -70,8 +70,9 @@ def whitelisted_guild(guild_id: int):
 
 @app.route("/")
 async def index():
-    return await render_template("index.html",
-        client_id=config["client_id"], redirect=config["redirect_uri"]
+    return redirect(
+        f"https://discord.com/oauth2/authorize?client_id={config['client_id']}"
+        f"&scope=bot&redirect_uri={config['redirect_uri']}&prompt=consent&response_type=code"
     )
 
 
@@ -79,7 +80,7 @@ async def index():
 async def api_grant(guild_id):
     api_validator()
     discord_id_validator(guild_id, "guild_id")
-    author_id = request.headers.get("author_id")
+    author_id = request.headers.get("x-responsible")
 
     data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
     if data:
@@ -100,7 +101,7 @@ async def api_grant(guild_id):
 async def api_revoke(guild_id):
     api_validator()
     discord_id_validator(guild_id, "guild_id")
-    author_id = request.headers.get("author_id")
+    author_id = request.headers.get("x-responsible")
 
     data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
     if not data:
@@ -167,6 +168,14 @@ async def success():
     )
 
 
+@app.route("/error")
+async def error():
+    guild_id = request.args.get("guild_id")
+    if not guild_id:
+        abort(400)
+    return await render_template("error.html", guild_id=guild_id)
+
+
 @app.route("/callback")
 async def callback_discord():
     code = request.args.get("code")
@@ -178,7 +187,7 @@ async def callback_discord():
 
     whitelist_check = whitelisted_guild(guild_id)
     if not whitelist_check:
-        return abort(403, "This server is not whitelisted...")
+        return redirect(f"/error?guild_id={guild_id}")
 
     data = await exchange_code(code)
 
