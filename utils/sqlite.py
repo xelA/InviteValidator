@@ -35,6 +35,7 @@ class Database:
         CREATE TABLE IF NOT EXISTS whitelist (
             guild_id BIGINT NOT NULL,
             whitelist BOOLEAN NOT NULL DEFAULT true,
+            invited BOOLEAN NOT NULL DEFAULT false,
             granted_by BIGINT NOT NULL,
             revoked_by BIGINT,
             PRIMARY KEY (guild_id)

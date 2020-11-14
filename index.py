@@ -60,12 +60,17 @@ def json_response(name: str, desc: str, code: int = 200):
 
 
 def whitelisted_guild(guild_id: int):
-    """ Check if guild is whitelisted """
+    """ Check if guild is whitelisted
+    Values: return( WHITELIST, INVITED )
+    """
     data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (guild_id,))
     if not data:
-        return False
+        return (False, True)
 
-    return True if data["whitelist"] == 1 else False
+    return (
+        True if data["whitelist"] == 1 else False,
+        True if data["invited"] == 1 else False
+    )
 
 
 @app.route("/")
@@ -85,7 +90,7 @@ async def api_grant(guild_id):
     data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
     if data:
         db.execute(
-            "UPDATE whitelist SET granted_by=?, revoked_by=null, whitelist=true WHERE guild_id=?",
+            "UPDATE whitelist SET granted_by=?, revoked_by=null, whitelist=true, invited=false WHERE guild_id=?",
             (int(author_id), int(guild_id))
         )
         return json_response("Successfully granted", "GuildID has been granted invite access, again.")
@@ -124,7 +129,8 @@ async def api_guild_list():
             "guild_id": g["guild_id"],
             "whitelist": True if g["whitelist"] == 1 else False,
             "granted_by": g["granted_by"],
-            "revoked_by": g["revoked_by"]
+            "revoked_by": g["revoked_by"],
+            "invited": g["invited"]
         })
 
     return jsonify(guild_list)
@@ -137,13 +143,14 @@ async def api_guild_info(guild_id):
     data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
     if not data:
         return jsonify({
-            "guild_id": None, "whitelist": None,
-            "granted_by": None, "revoked_by": None
+            "guild_id": None, "whitelist": None, "granted_by": None,
+            "revoked_by": None, "invited": None
         })
 
     return jsonify({
         "guild_id": data["guild_id"],
         "whitelist": True if data["whitelist"] == 1 else False,
+        "invited": True if data["invited"] == 1 else False,
         "granted_by": data["granted_by"],
         "revoked_by": data["revoked_by"]
     })
@@ -185,11 +192,14 @@ async def callback_discord():
     if not guild_id:
         return abort(400, "Missing guild_id paramter")
 
-    whitelist_check = whitelisted_guild(guild_id)
+    whitelist_check, invited_check = whitelisted_guild(guild_id)
     if not whitelist_check:
         return redirect(f"/error?guild_id={guild_id}")
+    if invited_check:
+        return abort(403, f"Guild {guild_id} has already invited xelA... Contact owner to be granted a new invite.")
 
-    data = await exchange_code(code)
+    data = await exchange_code(code)  # Tell Discord to grant the bot
+    db.execute("UPDATE whitelist SET invited=true WHERE guild_id=?", (guild_id,))  # Guild can no longer invite bot
 
     add_guild_icon = f"&guild_icon={data['guild']['icon']}" if data['guild']['icon'] else ""
     return redirect(f"/success?guild_name={data['guild']['name']}&guild_id={guild_id}{add_guild_icon}")
