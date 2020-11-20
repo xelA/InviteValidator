@@ -183,6 +183,14 @@ async def error():
     return await render_template("error.html", guild_id=guild_id)
 
 
+@app.route("/duplicate")
+async def duplicate():
+    guild_id = request.args.get("guild_id")
+    if not guild_id:
+        abort(400)
+    return await render_template("duplicate.html", guild_id=guild_id)
+
+
 @app.route("/callback")
 async def callback_discord():
     code = request.args.get("code")
@@ -196,7 +204,7 @@ async def callback_discord():
     if not whitelist_check:
         return redirect(f"/error?guild_id={guild_id}")
     if invited_check:
-        return abort(403, f"Guild {guild_id} has already invited xelA... Contact owner to be granted a new invite.")
+        return redirect(f"/duplicate?guild_id={guild_id}")
 
     data = await exchange_code(code)  # Tell Discord to grant the bot
     db.execute("UPDATE whitelist SET invited=true WHERE guild_id=?", (guild_id,))  # Guild can no longer invite bot
