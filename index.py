@@ -196,7 +196,7 @@ async def callback_discord():
     code = request.args.get("code")
     guild_id = request.args.get("guild_id")
     if not code:
-        return abort(403, "No code granted...")
+        return abort(401, "No code granted...")
     if not guild_id:
         return abort(400, "Missing guild_id paramter")
 
