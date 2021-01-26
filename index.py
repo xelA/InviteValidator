@@ -180,7 +180,7 @@ async def error():
     guild_id = request.args.get("guild_id")
     if not guild_id:
         abort(400)
-    return await render_template("error.html", guild_id=guild_id)
+    return await render_template("error.html", guild_id=guild_id, support=config["support_server"])
 
 
 @app.route("/duplicate")
@@ -188,7 +188,7 @@ async def duplicate():
     guild_id = request.args.get("guild_id")
     if not guild_id:
         abort(400)
-    return await render_template("duplicate.html", guild_id=guild_id)
+    return await render_template("duplicate.html", guild_id=guild_id, support=config["support_server"])
 
 
 @app.route("/callback")
