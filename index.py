@@ -198,7 +198,7 @@ async def callback_discord():
     if not code:
         return abort(401, "No code granted...")
     if not guild_id:
-        return abort(400, "Missing guild_id paramter")
+        return abort(400, "Missing guild_id parameter")
 
     whitelist_check, invited_check = whitelisted_guild(guild_id)
     if not whitelist_check:
