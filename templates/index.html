@@ -20,10 +20,44 @@
     transition: background-color .2s ease-in-out;
   }
 
+  .small-box {
+    max-width: 35em;
+    margin-bottom: 3em;
+  }
+
+  .title-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-bottom: .5em;
+  }
+
+  .title-container img {
+    border-radius: 50%;
+    height: 90px;
+    width: 90px;
+  }
+
+  .title-container .title-xela {
+    font-weight: bold;
+    line-height: 1.1em;
+    margin-bottom: 0;
+    margin-left: .2em;
+  }
+
   label { line-height: 18px; }
 </style>
 
-<h1>xelA Invite Validator</h1>
+<div class="title-container">
+  <img src="https://avatars.githubusercontent.com/u/37005026?s=200&v=4">
+  <h1 class="title-xela">Invite xelA</h1>
+</div>
+
+<p class="small-box">
+  <b class="sun-flower-text">NOTE:</b> Before attempting to invite the bot.
+  Make sure that you have already requested for whitelist so you don't start scratching your head
+  when you see that you are not allowed to invite xelA. Thank you 💖
+</p>
 
 <div class="permission-container">
   <input type="checkbox" id="permissions" name="permissions">
