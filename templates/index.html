@@ -1,0 +1,54 @@
+{% extends "_error.html" %}
+{% block content %}
+<style>
+  .permission-container {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .invite-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  #invite {
+    padding: .5em 1em;
+    background-color: #2ecc71;
+    color: #000;
+    text-decoration: none;
+    transition: background-color .2s ease-in-out;
+  }
+
+  label { line-height: 18px; }
+</style>
+
+<h1>xelA Invite Validator</h1>
+
+<div class="permission-container">
+  <input type="checkbox" id="permissions" name="permissions">
+  <label for="permissions">Enable bot role</label>
+</div>
+
+<div class="invite-container">
+  <a href="{{ oauth_url | safe }}" id="invite">Invite bot</a>
+  <input type="text" id="invite-code" placeholder="Permission code..." pattern="[0-9]{1,}" style="display: none;">
+</div>
+
+<script>
+  const permissions = document.getElementById("permissions")
+  const invite = document.getElementById("invite")
+
+  permissions.addEventListener("change", () => {
+    if (permissions.checked) {
+      invite.href = "{{ oauth_url | safe }}&permissions={{ permissions }}"
+      invite.innerText = "Invite bot with bot role"
+      invite.style.backgroundColor = "#f1c40f"
+    } else {
+      invite.href = "{{ oauth_url | safe }}"
+      invite.innerText = "Invite bot"
+      invite.style.backgroundColor = "#2ecc71"
+    }
+  });
+</script>
+{% endblock %}

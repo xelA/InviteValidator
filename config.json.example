@@ -7,5 +7,6 @@
   "scopes": "identify connections",
   "support_server": "https://discord.gg/DpxkY3x",
   "bot_website": "https://xela.dev",
+  "permissions": 1337,
   "port": 8080
 }

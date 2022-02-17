@@ -75,9 +75,11 @@ def whitelisted_guild(guild_id: int):
 
 @app.route("/")
 async def index():
-    return redirect(
-        f"https://discord.com/oauth2/authorize?client_id={config['client_id']}"
-        f"&scope=bot&redirect_uri={config['redirect_uri']}&prompt=consent&response_type=code"
+    return await render_template(
+        "index.html",
+        permissions=config.get("permissions", 8),
+        oauth_url=f"https://discord.com/oauth2/authorize?client_id={config['client_id']}"
+                  f"&scope=bot&redirect_uri={config['redirect_uri']}&prompt=consent&response_type=code"
     )
 
 
@@ -215,8 +217,14 @@ async def callback_discord():
 
 @app.errorhandler(Exception)
 async def handle_exception(e):
-    return json_response(e.name, e.description, e.status_code)
+    if not hasattr(e, "status_code"):
+        status_code = 404
+    else:
+        status_code = e.status_code
+
+    return json_response(e.name, e.description, status_code)
 
 
-loop = asyncio.get_event_loop()
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 app.run(port=config["port"], loop=loop)
