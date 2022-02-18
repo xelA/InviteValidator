@@ -1,16 +1,27 @@
 import json
 import asyncio
 import re
+import traceback
+import aiohttp
 
 from quart import Quart, request, abort, jsonify, render_template, redirect
-from utils import http, sqlite
+from utils import sqlite
 
 app = Quart(__name__)
 db = sqlite.Database()
 db.create_tables()  # Attempt to make tables
 
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
 with open("config.json") as f:
     config = json.load(f)
+
+
+def traceback_maker(err, advance: bool = True):
+    _traceback = ''.join(traceback.format_tb(err.__traceback__))
+    error = ('```py\n{1}{0}: {2}\n```').format(type(err).__name__, _traceback, err)
+    return error if advance else f"{type(err).__name__}: {err}"
 
 
 async def exchange_code(code: str):
@@ -25,8 +36,11 @@ async def exchange_code(code: str):
     }
 
     try:
-        r = await http.post(f"{config['api_endpoint']}/oauth2/token", data=data, res_method="json")
-    except RuntimeError:
+        session = aiohttp.ClientSession()
+        async with session.post(f"{config['api_endpoint']}/oauth2/token", data=data) as s:
+            r = await s.json()
+        await session.close()
+    except Exception:
         abort(500, "Server failed to connect with discord.com API")
 
     if "error" in r:
@@ -83,7 +97,27 @@ async def index():
     )
 
 
-@app.route("/api/grant/<guild_id>")
+@app.route("/api/guilds/<guild_id>", methods=["GET"])
+async def api_guild_info(guild_id):
+    api_validator()
+    discord_id_validator(guild_id, "guild_id")
+    data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
+    if not data:
+        return jsonify({
+            "guild_id": None, "whitelist": None, "granted_by": None,
+            "revoked_by": None, "invited": None
+        })
+
+    return jsonify({
+        "guild_id": data["guild_id"],
+        "whitelist": True if data["whitelist"] == 1 else False,
+        "invited": True if data["invited"] == 1 else False,
+        "granted_by": data["granted_by"],
+        "revoked_by": data["revoked_by"]
+    })
+
+
+@app.route("/api/guilds/<guild_id>", methods=["POST"])
 async def api_grant(guild_id):
     api_validator()
     discord_id_validator(guild_id, "guild_id")
@@ -104,7 +138,7 @@ async def api_grant(guild_id):
         return json_response("Successfully granted", "GuildID has been granted invite access")
 
 
-@app.route("/api/revoke/<guild_id>")
+@app.route("/api/guilds/<guild_id>", methods=["DELETE"])
 async def api_revoke(guild_id):
     api_validator()
     discord_id_validator(guild_id, "guild_id")
@@ -121,7 +155,7 @@ async def api_revoke(guild_id):
     return json_response("Successfully revoked", "GuildID has been revoked invite access")
 
 
-@app.route("/api/guilds")
+@app.route("/api/guilds", methods=["GET"])
 async def api_guild_list():
     api_validator()
     data = db.fetch("SELECT * FROM whitelist")
@@ -136,26 +170,6 @@ async def api_guild_list():
         })
 
     return jsonify(guild_list)
-
-
-@app.route("/api/guilds/<guild_id>")
-async def api_guild_info(guild_id):
-    api_validator()
-    discord_id_validator(guild_id, "guild_id")
-    data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
-    if not data:
-        return jsonify({
-            "guild_id": None, "whitelist": None, "granted_by": None,
-            "revoked_by": None, "invited": None
-        })
-
-    return jsonify({
-        "guild_id": data["guild_id"],
-        "whitelist": True if data["whitelist"] == 1 else False,
-        "invited": True if data["invited"] == 1 else False,
-        "granted_by": data["granted_by"],
-        "revoked_by": data["revoked_by"]
-    })
 
 
 @app.route("/success")
@@ -225,6 +239,4 @@ async def handle_exception(e):
     return json_response(e.name, e.description, status_code)
 
 
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
 app.run(port=config["port"], loop=loop)

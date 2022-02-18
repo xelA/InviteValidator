@@ -11,9 +11,12 @@ This application (website) is used to validate if xelA is allowed to be invited 
 X-Responsible: Your AuthorID<br>
 Authorization: backend_api_token from config.json
 
-GET /api/grant/:guild_id | Grant GuildID access to invite bot<br>
-GET /api/revoke/:guild_id | Revoke GuildID access to invite bot<br>
-GET /api/guilds | Show all Guilds
+```
+GET     /api/guilds             Show all Guilds
+GET     /api/guilds/:guild_id   Show GuildID access for 1 server
+POST    /api/guilds/:guild_id   Grant GuildID access to invite bot
+DELETE  /api/guilds/:guild_id   Revoke GuildID access to invite bot
+```
 
 # Support
 You can find me at https://discord.gg/yqb7vATbjH if you need help, but keep in mind that I won't spoonfeed you...
