@@ -8,7 +8,7 @@
 
   .invite-container {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
   }
 
@@ -20,9 +20,10 @@
     transition: background-color .2s ease-in-out;
   }
 
+  #botrole_warning { display: none; }
+
   .small-box {
     max-width: 35em;
-    margin-bottom: 3em;
   }
 
   .title-container {
@@ -65,6 +66,10 @@
 </div>
 
 <div class="invite-container">
+  <p id="botrole_warning" class="small-box">
+    <b class="sun-flower-text">ANOTHER NOTE:</b> To remove the role later,
+    you need to remove the bot role from the server. (Thank you Discord, very cool)
+  </p>
   <a href="{{ oauth_url | safe }}" id="invite">Invite bot</a>
   <input type="text" id="invite-code" placeholder="Permission code..." pattern="[0-9]{1,}" style="display: none;">
 </div>
@@ -72,16 +77,19 @@
 <script>
   const permissions = document.getElementById("permissions")
   const invite = document.getElementById("invite")
+  const botrole_warning = document.getElementById("botrole_warning")
 
   permissions.addEventListener("change", () => {
     if (permissions.checked) {
       invite.href = "{{ oauth_url | safe }}&permissions={{ permissions }}"
       invite.innerText = "Invite bot with bot role"
       invite.style.backgroundColor = "#f1c40f"
+      botrole_warning.style.display = "flex"
     } else {
       invite.href = "{{ oauth_url | safe }}"
       invite.innerText = "Invite bot"
       invite.style.backgroundColor = "#2ecc71"
+      botrole_warning.style.display = "none"
     }
   });
 </script>
