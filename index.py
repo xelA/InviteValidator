@@ -78,12 +78,10 @@ def whitelisted_guild(guild_id: int):
     Values: return( WHITELIST, INVITED )
     """
     data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (guild_id,))
-    if not data:
-        return (False, True)
-
     return (
-        True if data["whitelist"] == 1 else False,
-        True if data["invited"] == 1 else False
+        (data["whitelist"] == 1, data["invited"] == 1)
+        if data
+        else (False, True)
     )
 
 
@@ -102,19 +100,27 @@ async def api_guild_info(guild_id):
     api_validator()
     discord_id_validator(guild_id, "guild_id")
     data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
-    if not data:
-        return jsonify({
-            "guild_id": None, "whitelist": None, "granted_by": None,
-            "revoked_by": None, "invited": None
-        })
-
-    return jsonify({
-        "guild_id": data["guild_id"],
-        "whitelist": True if data["whitelist"] == 1 else False,
-        "invited": True if data["invited"] == 1 else False,
-        "granted_by": data["granted_by"],
-        "revoked_by": data["revoked_by"]
-    })
+    return (
+        jsonify(
+            {
+                "guild_id": data["guild_id"],
+                "whitelist": data["whitelist"] == 1,
+                "invited": data["invited"] == 1,
+                "granted_by": data["granted_by"],
+                "revoked_by": data["revoked_by"],
+            }
+        )
+        if data
+        else jsonify(
+            {
+                "guild_id": None,
+                "whitelist": None,
+                "granted_by": None,
+                "revoked_by": None,
+                "invited": None,
+            }
+        )
+    )
 
 
 @app.route("/api/guilds/<guild_id>", methods=["POST"])
@@ -123,8 +129,9 @@ async def api_grant(guild_id):
     discord_id_validator(guild_id, "guild_id")
     author_id = request.headers.get("x-responsible")
 
-    data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
-    if data:
+    if data := db.fetchrow(
+        "SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),)
+    ):
         db.execute(
             "UPDATE whitelist SET granted_by=?, revoked_by=null, whitelist=true, invited=false WHERE guild_id=?",
             (int(author_id), int(guild_id))
@@ -159,15 +166,16 @@ async def api_revoke(guild_id):
 async def api_guild_list():
     api_validator()
     data = db.fetch("SELECT * FROM whitelist")
-    guild_list = []
-    for g in data:
-        guild_list.append({
+    guild_list = [
+        {
             "guild_id": g["guild_id"],
-            "whitelist": True if g["whitelist"] == 1 else False,
+            "whitelist": g["whitelist"] == 1,
             "granted_by": g["granted_by"],
             "revoked_by": g["revoked_by"],
-            "invited": g["invited"]
-        })
+            "invited": g["invited"],
+        }
+        for g in data
+    ]
 
     return jsonify(guild_list)
 
@@ -231,11 +239,7 @@ async def callback_discord():
 
 @app.errorhandler(Exception)
 async def handle_exception(e):
-    if not hasattr(e, "status_code"):
-        status_code = 404
-    else:
-        status_code = e.status_code
-
+    status_code = e.status_code if hasattr(e, "status_code") else 404
     return json_response(e.name, e.description, status_code)
 
 
