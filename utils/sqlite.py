@@ -2,10 +2,7 @@ import sqlite3
 
 
 def dict_factory(cursor, row):
-    d = {}
-    for index, col in enumerate(cursor.description):
-        d[col[0]] = row[index]
-    return d
+    return {col[0]: row[index] for index, col in enumerate(cursor.description)}
 
 
 class Database:
@@ -24,7 +21,7 @@ class Database:
             return f"{type(e).__name__}: {e}"
 
         status_word = sql.split(' ')[0].upper()
-        status_code = data.rowcount if data.rowcount > 0 else 0
+        status_code = max(data.rowcount, 0)
         if status_word == "SELECT":
             status_code = len(data.fetchall())
 
@@ -46,10 +43,8 @@ class Database:
 
     def fetch(self, sql: str, prepared: tuple = ()):
         """ Fetch DB data with args for 'Prepared Statements' """
-        data = self.db.execute(sql, prepared).fetchall()
-        return data
+        return self.db.execute(sql, prepared).fetchall()
 
     def fetchrow(self, sql: str, prepared: tuple = ()):
         """ Fetch DB row (one row only) with args for 'Prepared Statements' """
-        data = self.db.execute(sql, prepared).fetchone()
-        return data
+        return self.db.execute(sql, prepared).fetchone()
