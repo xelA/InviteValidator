@@ -1,27 +1,19 @@
-import json
-import asyncio
-import re
-import traceback
 import aiohttp
+import asyncio
+import json
 
-from quart import Quart, request, abort, jsonify, render_template, redirect
-from utils import sqlite
+from functools import wraps
+from postgreslite import PostgresLite
+from quart import Quart, request, abort, render_template, redirect
 
-app = Quart(__name__)
-db = sqlite.Database()
-db.create_tables()  # Attempt to make tables
+from utils.api import APIHandler
 
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-
-with open("config.json") as f:
+with open("./config.json", "r", encoding="utf8") as f:
     config = json.load(f)
 
-
-def traceback_maker(err, advance: bool = True):
-    _traceback = ''.join(traceback.format_tb(err.__traceback__))
-    error = ('```py\n{1}{0}: {2}\n```').format(type(err).__name__, _traceback, err)
-    return error if advance else f"{type(err).__name__}: {err}"
+app = Quart(__name__)
+db = PostgresLite("./storage.db").connect()
+api = APIHandler(config, db)
 
 
 async def exchange_code(code: str):
@@ -49,42 +41,24 @@ async def exchange_code(code: str):
     return r
 
 
-def api_validator():
+def api_validator(f):
     """ Validate if user can use invite API """
-    auth = request.headers.get("Authorization")
-    author_id = request.headers.get("x-responsible")
-    if not auth:
-        abort(400, "Missing Authorization")
-    if not author_id:
-        abort(400, "Missing x-responsible")
-    discord_id_validator(author_id, "x-responsible")
-    if auth != config["backend_api_token"]:
-        abort(403, "Access denied...")
+    @wraps(f)
+    async def decorator(*args, **kwargs):
+        auth = request.headers.get("Authorization", None)
+        content = request.headers.get("Content-Type", None)
 
+        if content != "application/json":
+            abort(400, "Invalid Content-Type. Must be application/json")
+        if not auth:
+            abort(400, "Missing Authorization")
 
-def discord_id_validator(guild_id, type: str):
-    checker = re.compile(r"^[0-9]{15,19}\b").match(guild_id)
-    if not checker:
-        abort(400, f"Invalid Discord ID: {type}")
+        if auth != config["backend_api_token"]:
+            abort(403, "Access denied...")
 
+        return await f(*args, **kwargs)
 
-def json_response(name: str, desc: str, code: int = 200):
-    """ Returns a default JSON output for all API/error endpoints """
-    return jsonify({"code": code, "name": name, "description": desc}), code
-
-
-def whitelisted_guild(guild_id: int):
-    """ Check if guild is whitelisted
-    Values: return( WHITELIST, INVITED )
-    """
-    data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (guild_id,))
-    if not data:
-        return (False, True)
-
-    return (
-        True if data["whitelist"] == 1 else False,
-        True if data["invited"] == 1 else False
-    )
+    return decorator
 
 
 @app.route("/")
@@ -92,84 +66,12 @@ async def index():
     return await render_template(
         "index.html",
         permissions=config.get("permissions", 8),
-        oauth_url=f"https://discord.com/oauth2/authorize?client_id={config['client_id']}"
-                  f"&scope=bot&redirect_uri={config['redirect_uri']}&prompt=consent&response_type=code"
-    )
-
-
-@app.route("/api/guilds/<guild_id>", methods=["GET"])
-async def api_guild_info(guild_id):
-    api_validator()
-    discord_id_validator(guild_id, "guild_id")
-    data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
-    if not data:
-        return jsonify({
-            "guild_id": None, "whitelist": None, "granted_by": None,
-            "revoked_by": None, "invited": None
-        })
-
-    return jsonify({
-        "guild_id": data["guild_id"],
-        "whitelist": True if data["whitelist"] == 1 else False,
-        "invited": True if data["invited"] == 1 else False,
-        "granted_by": data["granted_by"],
-        "revoked_by": data["revoked_by"]
-    })
-
-
-@app.route("/api/guilds/<guild_id>", methods=["POST"])
-async def api_grant(guild_id):
-    api_validator()
-    discord_id_validator(guild_id, "guild_id")
-    author_id = request.headers.get("x-responsible")
-
-    data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
-    if data:
-        db.execute(
-            "UPDATE whitelist SET granted_by=?, revoked_by=null, whitelist=true, invited=false WHERE guild_id=?",
-            (int(author_id), int(guild_id))
+        oauth_url=(
+            f"https://discord.com/oauth2/authorize?client_id={config['client_id']}"
+            f"&scope=bot&redirect_uri={config['redirect_uri']}"
+            "&prompt=consent&response_type=code"
         )
-        return json_response("Successfully granted", "GuildID has been granted invite access, again.")
-    else:
-        db.execute(
-            "INSERT INTO whitelist (guild_id, granted_by) VALUES (?, ?)",
-            (int(guild_id), int(author_id))
-        )
-        return json_response("Successfully granted", "GuildID has been granted invite access")
-
-
-@app.route("/api/guilds/<guild_id>", methods=["DELETE"])
-async def api_revoke(guild_id):
-    api_validator()
-    discord_id_validator(guild_id, "guild_id")
-    author_id = request.headers.get("x-responsible")
-
-    data = db.fetchrow("SELECT * FROM whitelist WHERE guild_id=?", (int(guild_id),))
-    if not data:
-        return json_response("Task refused", "GuildID is not even listed inside the API...")
-
-    db.execute(
-        "UPDATE whitelist SET revoked_by=?, whitelist=false WHERE guild_id=?",
-        (int(author_id), int(guild_id))
     )
-    return json_response("Successfully revoked", "GuildID has been revoked invite access")
-
-
-@app.route("/api/guilds", methods=["GET"])
-async def api_guild_list():
-    api_validator()
-    data = db.fetch("SELECT * FROM whitelist")
-    guild_list = []
-    for g in data:
-        guild_list.append({
-            "guild_id": g["guild_id"],
-            "whitelist": True if g["whitelist"] == 1 else False,
-            "granted_by": g["granted_by"],
-            "revoked_by": g["revoked_by"],
-            "invited": g["invited"]
-        })
-
-    return jsonify(guild_list)
 
 
 @app.route("/success")
@@ -185,7 +87,8 @@ async def success():
     if guild_icon:
         icon_type = "gif" if guild_icon.startswith("a_") else "png"
 
-    return await render_template("success.html",
+    return await render_template(
+        "success.html",
         name=guild_name, id=guild_id, icon=guild_icon, icon_type=icon_type,
         support=config["support_server"], website=config["bot_website"]
     )
@@ -193,10 +96,15 @@ async def success():
 
 @app.route("/error")
 async def error():
-    guild_id = request.args.get("guild_id")
+    guild_id = request.args.get("guild_id", None)
     if not guild_id:
         abort(400)
-    return await render_template("error.html", guild_id=guild_id, support=config["support_server"])
+
+    return await render_template(
+        "error.html",
+        guild_id=guild_id,
+        support=config["support_server"]
+    )
 
 
 @app.route("/duplicate")
@@ -204,39 +112,96 @@ async def duplicate():
     guild_id = request.args.get("guild_id")
     if not guild_id:
         abort(400)
-    return await render_template("duplicate.html", guild_id=guild_id, support=config["support_server"])
+
+    return await render_template(
+        "duplicate.html",
+        guild_id=guild_id,
+        support=config["support_server"]
+    )
 
 
 @app.route("/callback")
 async def callback_discord():
-    code = request.args.get("code")
-    guild_id = request.args.get("guild_id")
-    if not code:
-        return abort(401, "No code granted...")
-    if not guild_id:
-        return abort(400, "Missing guild_id parameter")
+    code = request.args.get("code", None)
+    guild_id = request.args.get("guild_id", None)
 
-    whitelist_check, invited_check = whitelisted_guild(guild_id)
-    if not whitelist_check:
-        return redirect(f"/error?guild_id={guild_id}")
-    if invited_check:
+    if not code:
+        abort(401, "No code granted...")
+    if not guild_id:
+        abort(400, "Missing guild_id parameter")
+
+    data = db.fetchrow(
+        "SELECT * FROM whitelist WHERE guild_id=?",
+        int(guild_id)
+    )
+
+    error_site = f"/error?guild_id={guild_id}"
+    if not data:
+        return redirect(error_site)
+    if not data["whitelist"]:
+        return redirect(error_site)
+    if data["banned"]:
+        return redirect(error_site)
+
+    if data["invited"]:
         return redirect(f"/duplicate?guild_id={guild_id}")
 
-    data = await exchange_code(code)  # Tell Discord to grant the bot
-    db.execute("UPDATE whitelist SET invited=true WHERE guild_id=?", (guild_id,))  # Guild can no longer invite bot
+    r = await exchange_code(code)  # Tell Discord to grant the bot
+    db.execute(
+        "UPDATE whitelist SET invited=true WHERE guild_id=?",
+        guild_id  # Guild can no longer invite bot
+    )
 
-    add_guild_icon = f"&guild_icon={data['guild']['icon']}" if data['guild']['icon'] else ""
-    return redirect(f"/success?guild_name={data['guild']['name']}&guild_id={guild_id}{add_guild_icon}")
+    add_guild_icon = (
+        f"&guild_icon={r['guild']['icon']}"
+        if r['guild']['icon'] else ""
+    )
+
+    return redirect(
+        f"/success?guild_name={r['guild']['name']}"
+        f"&guild_id={guild_id}{add_guild_icon}"
+    )
+
+
+# API Routes
+@app.route("/api/guilds", methods=["GET", "POST", "DELETE"])
+@api_validator
+async def api_guild_handler():
+    match request.method:
+        case "GET":
+            return await api.api_guild_get()
+        case "POST":
+            return await api.api_guild_post()
+        case "DELETE":
+            return await api.api_guild_delete()
+        case _:
+            abort(405, "Method not allowed")
+
+
+@app.route("/api/guilds/ban", methods=["PUT", "DELETE"])
+@api_validator
+async def api_guild_ban_handler():
+    match request.method:
+        case "PUT":
+            return await api.api_guild_ban()
+        case "DELETE":
+            return await api.api_guild_unban()
+        case _:
+            abort(405, "Method not allowed")
 
 
 @app.errorhandler(Exception)
 async def handle_exception(e):
-    if not hasattr(e, "status_code"):
-        status_code = 404
-    else:
+    status_code = 404
+    if hasattr(e, "status_code"):
         status_code = e.status_code
 
-    return json_response(e.name, e.description, status_code)
+    return api.json_response(
+        e.name, e.description, status_code
+    )
 
+
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 
 app.run(port=config["port"], loop=loop)
