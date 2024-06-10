@@ -41,29 +41,37 @@ class APIHandler:
     async def api_guild_get(self):
         json_data = await self._parse_data("guild_id")
 
-        data = await self.db.fetchrow(
+        data_whitelist = await self.db.fetchrow(
             "SELECT * FROM whitelist WHERE guild_id=?",
             int(json_data["guild_id"])
         )
 
-        if not data:
-            return self.json_response(
-                "Not found",
-                "GuildID is not listed inside the API",
-                404
-            )
+        data_blacklist = await self.db.fetchrow(
+            "SELECT * FROM blacklist WHERE guild_id=?",
+            int(json_data["guild_id"])
+        )
 
         to_send = {
-            "guild_id": data["guild_id"],
-            "invited": True if data["invited"] == 1 else False,
-            "user_id": data["user_id"],
-            "banned": {}  # Placeholder
+            "data": {},
+            "blacklist": {}
         }
 
-        if data["banned"]:
-            to_send["banned"] = {
-                "reason": data["banned_reason"],
-                "user_id": data["banned_by"]
+        if data_whitelist:
+            to_send["data"] = {
+                "user_id": data_whitelist["user_id"],
+                "guild_id": data_whitelist["guild_id"],
+                "invited": bool(data_whitelist["invited"]),
+                "created_at": str(data_whitelist["created_at"])
+            }
+
+        if data_blacklist:
+            to_send["blacklist"] = {
+                "reason": data_blacklist["banned_reason"],
+                "user_id": data_blacklist["banned_by"],
+                "expires_at": (
+                    str(data_blacklist["expires_at"])
+                    if data_blacklist["expires_at"] else None
+                ),
             }
 
         return jsonify(to_send)
