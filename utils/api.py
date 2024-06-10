@@ -66,8 +66,8 @@ class APIHandler:
 
         if data_blacklist:
             to_send["blacklist"] = {
-                "reason": data_blacklist["banned_reason"],
-                "user_id": data_blacklist["banned_by"],
+                "reason": data_blacklist["reason"],
+                "user_id": data_blacklist["user_id"],
                 "expires_at": (
                     str(data_blacklist["expires_at"])
                     if data_blacklist["expires_at"] else None
