@@ -84,14 +84,19 @@ class APIHandler:
             int(json_data["guild_id"])
         )
 
-        if data:
-            if data["banned"]:
-                return self.json_response(
-                    "Guild is banned",
-                    f"Reason: {data['banned_reason']}",
-                    403
-                )
+        data_blacklist = await self.db.fetchrow(
+            "SELECT * FROM blacklist WHERE guild_id=?",
+            int(json_data["guild_id"])
+        )
 
+        if data_blacklist:
+            return self.json_response(
+                "Blacklist found",
+                f"Guild ID is blacklisted by {data_blacklist['user_id']}\n> {data_blacklist['reason']}",
+                403
+            )
+
+        if data:
             await self.db.execute(
                 "UPDATE whitelist SET user_id=?, invited=false "
                 "WHERE guild_id=?",
@@ -121,17 +126,22 @@ class APIHandler:
             int(json_data["guild_id"])
         )
 
+        data_blacklist = await self.db.fetchrow(
+            "SELECT * FROM blacklist WHERE guild_id=?",
+            int(json_data["guild_id"])
+        )
+
+        if data_blacklist:
+            return self.json_response(
+                "Blacklist found",
+                f"Guild ID is blacklisted by {data_blacklist['user_id']}\n> {data_blacklist['reason']}",
+                403
+            )
+
         if not data:
             return self.json_response(
                 "Task refused",
                 "GuildID is not even listed inside the API..."
-            )
-
-        if data["banned"]:
-            return self.json_response(
-                "Guild is banned",
-                f"Reason: {data['banned_reason']}",
-                403
             )
 
         await self.db.execute(
