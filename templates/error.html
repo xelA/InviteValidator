@@ -1,6 +1,24 @@
-{% extends "_error.html" %}
-{% block text %}
-Can't invite xelA to <span class="emerald-text">{{ guild_id }}</span>,
-please join <a href="{{ support }}" target="_blank">{{ support }}</a>
-and make a ticket in order to gain access to <b>xelA</b>.
+{% extends "_layout.html" %}
+{% block content %}
+<h1 class="alizarin-text no-margin" style="font-size: 3em;">ERR_CODE: {{ code }}</h1>
+<h2 class="no-margin" style="font-weight: normal;">
+  {% if code == "NF" %}
+    Can't invite xelA to <span class="emerald-text">{{ guild_id }}</span>,
+    please join <a href="{{ support }}" target="_blank">{{ support }}</a>
+    and make a ticket in order to gain access to <b>xelA</b>.
+
+  {% elif code == "BL" %}
+    This guild has been blacklisted from inviting xelA.
+    Think this is a mistake? Join <a href="{{ support }}" target="_blank">{{ support }}</a> and make a ticket.
+
+  {% elif code == "DUP" %}
+    Guild <span class="emerald-text">{{ guild_id }}</span> has already invited xelA...
+    Please join <a href="{{ support }}" target="_blank">{{ support }}</a> and make a ticket to be granted a new invite.
+
+  {% else %}
+    Unknown error code... Exploring the API are we today?
+
+  {% endif %}
+</h2>
+
 {% endblock %}

@@ -1,4 +1,4 @@
-{% extends "_error.html" %}
+{% extends "_layout.html" %}
 {% block content %}
 <style>
   .permission-container {
@@ -12,84 +12,57 @@
     align-items: center;
   }
 
-  #invite {
-    padding: .5em 1em;
-    background-color: #2ecc71;
-    color: #000;
-    text-decoration: none;
-    transition: background-color .2s ease-in-out;
+  #permissions {
+    margin-right: .5em;
+    margin-bottom: .1em;
   }
-
-  #botrole_warning { display: none; }
-
-  .small-box {
-    max-width: 35em;
-  }
-
-  .title-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    margin-bottom: .5em;
-  }
-
-  .title-container img {
-    border-radius: 50%;
-    height: 90px;
-    width: 90px;
-  }
-
-  .title-container .title-xela {
-    font-weight: bold;
-    line-height: 1.1em;
-    margin-bottom: 0;
-    margin-left: .2em;
-  }
-
-  label { line-height: 18px; }
 </style>
 
-<div class="title-container">
-  <img src="https://avatars.githubusercontent.com/u/37005026?s=200&v=4">
-  <h1 class="title-xela">Invite xelA</h1>
-</div>
+<section class="me unset">
+  <div class="avatar-container">
+    <img src="https://avatars.githubusercontent.com/u/37005026?s=200&v=4" class="image-title">
+  </div>
+  <div class="unset">
+    <h1 class="title">Invite xelA</h1>
+  </div>
+</section>
 
-<p class="small-box">
-  <b class="sun-flower-text">NOTE:</b> Before attempting to invite the bot.
-  Make sure that you have already requested for whitelist so you don't start scratching your head
-  when you see that you are not allowed to invite xelA. Thank you 💖
-</p>
-
-<div class="permission-container">
-  <input type="checkbox" id="permissions" name="permissions">
-  <label for="permissions">Enable bot role</label>
-</div>
-
-<div class="invite-container">
-  <p id="botrole_warning" class="small-box">
-    <b class="sun-flower-text">ANOTHER NOTE:</b> To remove the role later,
-    you need to remove the bot role from the server. (Thank you Discord, very cool)
+<div class="box-container no-margin">
+  <p class="small-box">
+    <h2 class="no-margin">Before attempting to invite the bot...</h2>
+    Make sure that you have already requested for whitelist so you don't start scratching your head
+    when you see that you are not allowed to invite xelA. Thank you 💖
   </p>
-  <a href="{{ oauth_url | safe }}" id="invite">Invite bot</a>
-  <input type="text" id="invite-code" placeholder="Permission code..." pattern="[0-9]{1,}" style="display: none;">
+
+  <div class="box-container primary-bg no-margin">
+    <div class="permission-container">
+      <input type="checkbox" id="permissions" name="permissions">
+      <label for="permissions" class="no-margin">Enable bot role</label>
+    </div>
+    <i class="greyple-text">To remove the role later, you need to whitelist the bot again to update oauth.</i>
+  </div>
+
+</div>
+
+<div class="box-container">
+  <div class="buttons">
+    <a href="{{ oauth_url | safe }}" id="invite" class="btn emerald-bg black-text">Invite bot</a>
+  </div>
 </div>
 
 <script>
   const permissions = document.getElementById("permissions")
   const invite = document.getElementById("invite")
-  const botrole_warning = document.getElementById("botrole_warning")
 
   permissions.addEventListener("change", () => {
     if (permissions.checked) {
       invite.href = "{{ oauth_url | safe }}&permissions={{ permissions }}"
       invite.innerText = "Invite bot with bot role"
       invite.style.backgroundColor = "#f1c40f"
-      botrole_warning.style.display = "flex"
     } else {
       invite.href = "{{ oauth_url | safe }}"
       invite.innerText = "Invite bot"
       invite.style.backgroundColor = "#2ecc71"
-      botrole_warning.style.display = "none"
     }
   });
 </script>

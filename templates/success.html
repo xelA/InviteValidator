@@ -1,102 +1,34 @@
 {% extends "_layout.html" %}
 {% block content %}
-<canvas id='firework-canvas'></canvas>
-<style>
-  #firework-canvas {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    opacity: .15;
-    z-index: -1;
-  }
-</style>
 
-{% if icon %}
-<img draggable="false" src="https://cdn.discordapp.com/icons/{{id}}/{{icon}}.{{icon_type}}?size=1024" class="image-title">
-{% endif %}
-<div class="center-text">
-  <h4 class="undertitle" style="font-weight: normal;">
-    Successfully added <b class="emerald-text">xelA</b> to:<br>
-    <b>{{ name }}</b>
-  </h4>
-  <p style="margin-top: .5em">
-    If you need help, visit <a href="{{ support }}" target="_blank">{{ support }}</a> or use <code>/help</code>
-    <br>
-    To access settings, visit <a href="{{ website }}" target="_blank">{{ website }}</a> to view the dashboard ❤
-  </p>
+<section class="me">
+  {% if icon %}
+  <div class="avatar-container">
+    <img
+      draggable="false"
+      src="https://cdn.discordapp.com/icons/{{id}}/{{icon}}.{{icon_type}}?size=1024"
+      class="image-title"
+    >
+  </div>
+  {% endif %}
+  <h1 class="title emerald-text" style="margin: 0;">Success!</h1>
+  <h2 class="no-margin">
+    <b class="emerald-text">xelA</b> has now successfully joined
+    <b class="sun-flower-text">{{ name }}</b>
+  </h2>
+</section>
+
+<div class="flex-grid">
+  <div class="box-container primary-bg" style="width: 100%;">
+    <p class="center-text">
+      If you need help, visit
+      <a href="{{ support }}" target="_blank" class="emerald-text">{{ support }}</a>
+      or use <code>/help</code>.
+      To access settings, visit
+      <a href="{{ website }}/guild/{{id}}" target="_blank" class="emerald-text">{{ website }}/guild/{{id}}</a>
+      to view the dashboard ❤
+    </p>
+  </div>
 </div>
 
-<!-- Firework script, credits: http://slicker.me/javascript/fireworks.htm -->
-<script>
-  const max_fireworks = 3, max_sparks = 50;
-  let canvas = document.getElementById('firework-canvas');
-  let context = canvas.getContext('2d');
-  let fireworks = [];
-
-  for (let i = 0; i < max_fireworks; i++) {
-    let firework = {
-      sparks: []
-    };
-    for (let n = 0; n < max_sparks; n++) {
-      let spark = {
-        vx: Math.random() * 5 + .5,
-        vy: Math.random() * 5 + .5,
-        weight: Math.random() * .3 + .03,
-        red: Math.floor(Math.random() * 2),
-        green: Math.floor(Math.random() * 2),
-        blue: Math.floor(Math.random() * 2)
-      };
-      if (Math.random() > .5) spark.vx = -spark.vx;
-      if (Math.random() > .5) spark.vy = -spark.vy;
-      firework.sparks.push(spark);
-    }
-    fireworks.push(firework);
-    resetFirework(firework);
-  }
-  window.requestAnimationFrame(explode);
-
-  function resetFirework(firework) {
-    firework.x = Math.floor(Math.random() * canvas.width);
-    firework.y = canvas.height;
-    firework.age = 0;
-    firework.phase = 'fly';
-  }
-
-  function explode() {
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    fireworks.forEach((firework,index) => {
-      if (firework.phase == 'explode') {
-          firework.sparks.forEach((spark) => {
-          for (let i = 0; i < 10; i++) {
-            let trailAge = firework.age + i;
-            let x = firework.x + spark.vx * trailAge;
-            let y = firework.y + spark.vy * trailAge + spark.weight * trailAge * spark.weight * trailAge;
-            let fade = i * 20 - firework.age * 2;
-            let r = Math.floor(spark.red * fade);
-            let g = Math.floor(spark.green * fade);
-            let b = Math.floor(spark.blue * fade);
-            context.beginPath();
-            context.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',1)';
-            context.rect(x, y, 4, 4);
-            context.fill();
-          }
-        });
-        firework.age++;
-        if (firework.age > 100 && Math.random() < .05) {
-          resetFirework(firework);
-        }
-      } else {
-        firework.y = firework.y - 10;
-        for (let spark = 0; spark < 15; spark++) {
-          context.beginPath();
-          context.fillStyle = 'rgba(' + index * 50 + ',' + spark * 17 + ',0,1)';
-          context.rect(firework.x + Math.random() * spark - spark / 2, firework.y + spark * 4, 4, 4);
-          context.fill();
-        }
-        if (Math.random() < .001 || firework.y < 200) firework.phase = 'explode';
-      }
-    });
-    window.requestAnimationFrame(explode);
-  }
-  </script>
 {% endblock %}

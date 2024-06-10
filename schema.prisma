@@ -4,12 +4,16 @@ datasource db {
 }
 
 model whitelist {
-  guild_id      BigInt  @id @unique
-  whitelist     Boolean @default(true)
-  granted_by    BigInt
-  revoked_by    BigInt?
-  banned        Boolean @default(false)
-  banned_by     BigInt?
-  banned_reason String?
-  invited       Boolean @default(false)
+  guild_id   BigInt   @id @unique
+  user_id    BigInt
+  invited    Boolean  @default(false)
+  created_at DateTime @default(now())
+}
+
+model blacklist {
+  guild_id   BigInt    @id @unique
+  user_id    BigInt
+  reason     String
+  expires_at DateTime?
+  created_at DateTime  @default(now())
 }

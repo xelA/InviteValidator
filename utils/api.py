@@ -1,6 +1,8 @@
 import re
+import time
 
 from quart import request, abort, jsonify
+from datetime import datetime, timedelta
 from postgreslite import PoolConnection
 
 
@@ -39,7 +41,7 @@ class APIHandler:
     async def api_guild_get(self):
         json_data = await self._parse_data("guild_id")
 
-        data = self.db.fetchrow(
+        data = await self.db.fetchrow(
             "SELECT * FROM whitelist WHERE guild_id=?",
             int(json_data["guild_id"])
         )
@@ -53,10 +55,8 @@ class APIHandler:
 
         to_send = {
             "guild_id": data["guild_id"],
-            "whitelist": True if data["whitelist"] == 1 else False,
             "invited": True if data["invited"] == 1 else False,
-            "granted_by": data["granted_by"],
-            "revoked_by": data["revoked_by"],
+            "user_id": data["user_id"],
             "banned": {}  # Placeholder
         }
 
@@ -71,7 +71,7 @@ class APIHandler:
     async def api_guild_post(self):
         json_data = await self._parse_data("guild_id", "user_id")
 
-        data = self.db.fetchrow(
+        data = await self.db.fetchrow(
             "SELECT * FROM whitelist WHERE guild_id=?",
             int(json_data["guild_id"])
         )
@@ -84,9 +84,8 @@ class APIHandler:
                     403
                 )
 
-            self.db.execute(
-                "UPDATE whitelist "
-                "SET granted_by=?, revoked_by=null, whitelist=true, invited=false "
+            await self.db.execute(
+                "UPDATE whitelist SET user_id=?, invited=false "
                 "WHERE guild_id=?",
                 int(json_data["user_id"]), int(json_data["guild_id"])
             )
@@ -96,8 +95,8 @@ class APIHandler:
                 "GuildID has been granted invite access, again."
             )
 
-        self.db.execute(
-            "INSERT INTO whitelist (guild_id, granted_by) VALUES (?, ?)",
+        await self.db.execute(
+            "INSERT INTO whitelist (guild_id, user_id) VALUES (?, ?)",
             int(json_data["guild_id"]), int(json_data["user_id"])
         )
 
@@ -109,7 +108,7 @@ class APIHandler:
     async def api_guild_delete(self):
         json_data = await self._parse_data("guild_id", "user_id")
 
-        data = self.db.fetchrow(
+        data = await self.db.fetchrow(
             "SELECT * FROM whitelist WHERE guild_id=?",
             int(json_data["guild_id"])
         )
@@ -127,11 +126,8 @@ class APIHandler:
                 403
             )
 
-        self.db.execute(
-            "UPDATE whitelist "
-            "SET revoked_by=?, whitelist=false "
-            "WHERE guild_id=?",
-            int(json_data["user_id"]),
+        await self.db.execute(
+            "DELETE FROM whitelist WHERE guild_id=?",
             int(json_data["guild_id"])
         )
 
@@ -142,66 +138,57 @@ class APIHandler:
 
     async def api_guild_ban(self):
         json_data = await self._parse_data(
-            "guild_id", "user_id", "reason"
+            "guild_id", "user_id", "reason", "expires"
         )
 
-        data = self.db.fetchrow(
-            "SELECT * FROM whitelist WHERE guild_id=?",
+        data = await self.db.fetchrow(
+            "SELECT * FROM blacklist WHERE guild_id=?",
             int(json_data["guild_id"])
         )
 
-        if not data:
+        if data:
             return self.json_response(
-                "Not found",
-                "GuildID is not listed inside the API either way...",
+                "Blacklist found",
+                "GuildID is already blacklisted",
                 404
             )
 
-        if data["banned"]:
-            return self.json_response(
-                "Task refused",
-                "GuildID is already banned"
-            )
+        expires = None
+        expires_text = "never"
+        if isinstance(json_data["expires"], int):
+            expires = datetime.utcnow() + timedelta(seconds=json_data["expires"])
+            expires_text = f"<t:{int(time.time() + json_data['expires'])}:R>"
 
-        self.db.execute(
-            "UPDATE whitelist "
-            "SET banned_by=?, banned_reason=?, banned=true "
-            "WHERE guild_id=?",
-            int(json_data["user_id"]),
-            str(json_data["reason"]),
-            int(json_data["guild_id"])
+        await self.db.execute(
+            "INSERT INTO blacklist (guild_id, user_id, reason, expires_at) "
+            "VALUES (?, ?, ?, ?)",
+            int(json_data["guild_id"]), int(json_data["user_id"]),
+            str(json_data["reason"]), expires
         )
 
         return self.json_response(
-            "Successfully banned",
-            "GuildID has been banned from the API"
+            "Successfully blacklisted",
+            "GuildID has been blacklisted from the API, "
+            f"expires: {expires_text}"
         )
 
     async def api_guild_unban(self):
         json_data = await self._parse_data("guild_id")
 
-        data = self.db.fetchrow(
-            "SELECT * FROM whitelist WHERE guild_id=?",
+        data = await self.db.fetchrow(
+            "SELECT * FROM blacklist WHERE guild_id=?",
             int(json_data["guild_id"])
         )
 
         if not data:
             return self.json_response(
                 "Not found",
-                "GuildID is not listed inside the API either way...",
+                "GuildID is not blacklisted inside the API",
                 404
             )
 
-        if not data["banned"]:
-            return self.json_response(
-                "Task refused",
-                "GuildID is not even banned..."
-            )
-
-        self.db.execute(
-            "UPDATE whitelist "
-            "SET banned_by=null, banned_reason=null, banned=false "
-            "WHERE guild_id=?",
+        await self.db.execute(
+            "DELETE FROM blacklist WHERE guild_id=?",
             int(json_data["guild_id"])
         )
 

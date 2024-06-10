@@ -5,15 +5,29 @@ import json
 from functools import wraps
 from postgreslite import PostgresLite
 from quart import Quart, request, abort, render_template, redirect
+from datetime import datetime
 
 from utils.api import APIHandler
 
 with open("./config.json", "r", encoding="utf8") as f:
     config = json.load(f)
 
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
 app = Quart(__name__)
-db = PostgresLite("./storage.db").connect()
+db = PostgresLite("./storage.db", loop=loop).connect_async()
 api = APIHandler(config, db)
+
+
+async def remove_expired_blacklist():
+    """ Remove expired blacklist entries """
+    while True:
+        await db.execute(
+            "DELETE FROM blacklist WHERE expires_at < ?",
+            datetime.utcnow()
+        )
+        await asyncio.sleep(30)  # Check every half minute
 
 
 async def exchange_code(code: str):
@@ -97,24 +111,13 @@ async def success():
 @app.route("/error")
 async def error():
     guild_id = request.args.get("guild_id", None)
-    if not guild_id:
-        abort(400)
+    code = request.args.get("code", None)
+    if not guild_id or not code:
+        abort(400, "Missing parameters needed for error page")
 
     return await render_template(
         "error.html",
-        guild_id=guild_id,
-        support=config["support_server"]
-    )
-
-
-@app.route("/duplicate")
-async def duplicate():
-    guild_id = request.args.get("guild_id")
-    if not guild_id:
-        abort(400)
-
-    return await render_template(
-        "duplicate.html",
+        code=code,
         guild_id=guild_id,
         support=config["support_server"]
     )
@@ -130,24 +133,27 @@ async def callback_discord():
     if not guild_id:
         abort(400, "Missing guild_id parameter")
 
-    data = db.fetchrow(
+    data_whitelist = await db.fetchrow(
         "SELECT * FROM whitelist WHERE guild_id=?",
         int(guild_id)
     )
 
-    error_site = f"/error?guild_id={guild_id}"
-    if not data:
-        return redirect(error_site)
-    if not data["whitelist"]:
-        return redirect(error_site)
-    if data["banned"]:
-        return redirect(error_site)
+    data_blacklist = await db.fetchrow(
+        "SELECT * FROM blacklist WHERE guild_id=?",
+        int(guild_id)
+    )
 
-    if data["invited"]:
-        return redirect(f"/duplicate?guild_id={guild_id}")
+    error_site = f"/error?guild_id={guild_id}"
+
+    if data_blacklist:
+        return redirect(f"{error_site}&code=BL")
+    if not data_whitelist:
+        return redirect(f"{error_site}&code=NF")
+    if data_whitelist["invited"]:
+        return redirect(f"{error_site}&code=DUP")
 
     r = await exchange_code(code)  # Tell Discord to grant the bot
-    db.execute(
+    await db.execute(
         "UPDATE whitelist SET invited=true WHERE guild_id=?",
         guild_id  # Guild can no longer invite bot
     )
@@ -201,7 +207,8 @@ async def handle_exception(e):
     )
 
 
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
+# Run background tasks before boot
+loop.create_task(remove_expired_blacklist())
 
+# Run the app
 app.run(port=config["port"], loop=loop)
