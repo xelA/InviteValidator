@@ -17,3 +17,11 @@ model blacklist {
   expires_at DateTime?
   created_at DateTime  @default(now())
 }
+
+model notes {
+  id         Int      @id @default(autoincrement())
+  user_id    BigInt
+  guild_id   BigInt
+  content    String
+  created_at DateTime @default(now())
+}

@@ -170,28 +170,63 @@ async def callback_discord():
 
 
 # API Routes
-@app.route("/api/guilds", methods=["GET", "POST", "DELETE"])
+@app.route(
+    "/api/guilds/<int:guild_id>",
+    methods=["GET", "POST", "DELETE"]
+)
 @api_validator
-async def api_guild_handler():
+async def api_guild_handler(guild_id: int):
+    api.discord_id_validator(guild_id, "guild_id")
+
     match request.method:
         case "GET":
-            return await api.api_guild_get()
+            return await api.api_guild_get(guild_id)
         case "POST":
-            return await api.api_guild_post()
+            return await api.api_guild_post(guild_id)
         case "DELETE":
-            return await api.api_guild_delete()
+            return await api.api_guild_delete(guild_id)
         case _:
             abort(405, "Method not allowed")
 
 
-@app.route("/api/guilds/ban", methods=["PUT", "DELETE"])
+@app.route("/api/bans", methods=["GET"])
 @api_validator
-async def api_guild_ban_handler():
+async def api_list_bans():
+    return await api.api_guild_get_bans()
+
+
+@app.route(
+    "/api/guilds/<int:guild_id>/bans",
+    methods=["PUT", "DELETE"]
+)
+@api_validator
+async def api_guild_ban_handler(guild_id: int):
+    api.discord_id_validator(guild_id, "guild_id")
+
     match request.method:
         case "PUT":
-            return await api.api_guild_ban()
+            return await api.api_guild_ban(guild_id)
         case "DELETE":
-            return await api.api_guild_unban()
+            return await api.api_guild_unban(guild_id)
+        case _:
+            abort(405, "Method not allowed")
+
+
+@app.route(
+    "/api/guilds/<int:guild_id>/notes",
+    methods=["GET", "PUT", "DELETE"]
+)
+@api_validator
+async def api_guild_note_handler(guild_id: int):
+    api.discord_id_validator(guild_id, "guild_id")
+
+    match request.method:
+        case "GET":
+            return await api.api_guild_get_notes(guild_id)
+        case "PUT":
+            return await api.api_guild_add_note(guild_id)
+        case "DELETE":
+            return await api.api_guild_delete_note(guild_id)
         case _:
             abort(405, "Method not allowed")
 
