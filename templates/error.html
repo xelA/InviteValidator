@@ -7,6 +7,13 @@
     please join <a href="{{ support }}" target="_blank">{{ support }}</a>
     and make a ticket in order to gain access to <b>xelA</b>.
 
+  {% elif code == "IS" %}
+    The oauth2 state is invalid or has expired, please <a href="/">try again</a>.
+
+  {% elif code == "WS" %}
+    The oauth2 state is valid, however it is not for the correct invitation method.
+    This state key has therefore been invalidated. (Nice try tho)
+
   {% elif code == "BL" %}
     This guild has been blacklisted from inviting xelA.
     Think this is a mistake? Join <a href="{{ support }}" target="_blank">{{ support }}</a> and make a ticket.

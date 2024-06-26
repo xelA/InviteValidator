@@ -176,13 +176,13 @@ async def success_user():
 async def error():
     guild_id = request.args.get("guild_id", None)
     code = request.args.get("code", None)
-    if not guild_id or not code:
-        abort(400, "Missing parameters needed for error page")
+    if not code:
+        abort(400, "Missing parameter code needed for error page")
 
     return await render_template(
         "error.html",
         code=code,
-        guild_id=guild_id,
+        guild_id=guild_id or 1337,
         support=config["support_server"]
     )
 
@@ -199,7 +199,7 @@ async def callback_discord():
     )
 
     if not data_state:
-        abort(401, "Invalid state... what are you doing here?")
+        return redirect("/error?code=IS")
 
     # Instantly invalidate the state key
     await invalidate_state_key(state)
@@ -211,14 +211,14 @@ async def callback_discord():
         abort(401, "No code granted...")
 
     if data_state["integration_type"] == 1:
-        if guild_id:
-            abort(400, "Unexpected guild_id parameter for user integration")
+        if guild_id is not None:
+            return redirect("/error?code=WS")
 
         r = await exchange_code(code)  # Tell Discord to grant user bot access
         return redirect("/success_user")
 
     if not guild_id:
-        abort(400, "Missing guild_id parameter")
+        return redirect("/error?code=WS")
 
     data_whitelist = await db.fetchrow(
         "SELECT * FROM whitelist WHERE guild_id=?",
