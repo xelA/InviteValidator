@@ -2,8 +2,10 @@ import re
 import time
 
 from quart import request, abort, jsonify
-from datetime import datetime, timedelta
+from datetime import timedelta
 from postgreslite import PoolConnection
+
+from utils import default
 
 
 class APIHandler:
@@ -179,7 +181,7 @@ class APIHandler:
         expires = None
         expires_text = "never"
         if isinstance(json_data["expires"], int):
-            expires = datetime.utcnow() + timedelta(seconds=json_data["expires"])
+            expires = default.legacy_utcnow() + timedelta(seconds=json_data["expires"])
             expires_text = f"<t:{int(time.time() + json_data['expires'])}:R>"
 
         await self.db.execute(

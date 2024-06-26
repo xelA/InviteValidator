@@ -12,7 +12,7 @@
     align-items: center;
   }
 
-  #permissions {
+  input[type="checkbox"] {
     margin-right: .5em;
     margin-bottom: .1em;
   }
@@ -35,35 +35,62 @@
   </p>
 
   <div class="box-container primary-bg no-margin">
+
     <div class="permission-container">
       <input type="checkbox" id="permissions" name="permissions">
       <label for="permissions" class="no-margin">Enable bot role</label>
     </div>
     <i class="greyple-text">To remove the role later, you need to whitelist the bot again to update oauth.</i>
+
+    <div class="permission-container">
+      <input type="checkbox" id="user_install" name="user_install">
+      <label for="user_install" class="no-margin">User install</label>
+    </div>
+    <i class="greyple-text">This will install xelA to your user account instead with limited commands, however it does not require whitelist!</i>
+
   </div>
 
 </div>
 
 <div class="box-container">
   <div class="buttons">
-    <a href="{{ oauth_url | safe }}" id="invite" class="btn emerald-bg black-text">Invite bot</a>
+    <a href="/oauth2/guild" id="invite" class="btn emerald-bg black-text">Server install</a>
   </div>
 </div>
 
 <script>
+
   const permissions = document.getElementById("permissions")
   const invite = document.getElementById("invite")
+  const user_install = document.getElementById("user_install")
+
+  function default_button() {
+    invite.href = "/oauth2/guild"
+    invite.innerText = "Server install"
+    invite.style.backgroundColor = "#2ecc71"
+  }
 
   permissions.addEventListener("change", () => {
     if (permissions.checked) {
-      invite.href = "{{ oauth_url | safe }}&permissions={{ permissions }}"
-      invite.innerText = "Invite bot with bot role"
+      user_install.checked = false
+      invite.href = "/oauth2/guild&permissions={{ permissions }}"
+      invite.innerText = "Server install, with bot role"
       invite.style.backgroundColor = "#f1c40f"
     } else {
-      invite.href = "{{ oauth_url | safe }}"
-      invite.innerText = "Invite bot"
-      invite.style.backgroundColor = "#2ecc71"
+      default_button()
     }
-  });
+  })
+
+  user_install.addEventListener("change", () => {
+    if (user_install.checked) {
+      permissions.checked = false
+      invite.href = "/oauth2/user"
+      invite.innerText = "User install"
+      invite.style.backgroundColor = "#2ecc71"
+    } else {
+      default_button()
+    }
+  })
+
 </script>
 {% endblock %}
