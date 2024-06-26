@@ -189,12 +189,7 @@ async def error():
 
 @app.route("/callback")
 async def callback_discord():
-    code = request.args.get("code", None)
-    guild_id = request.args.get("guild_id", None)
     state = request.args.get("state", None)
-
-    if not code:
-        abort(401, "No code granted...")
     if not state:
         abort(401, "No state granted...")
 
@@ -207,8 +202,13 @@ async def callback_discord():
         abort(401, "Invalid state... what are you doing here?")
 
     # Instantly invalidate the state key
-    # to prevent any further usage of it
     await invalidate_state_key(state)
+
+    code = request.args.get("code", None)
+    guild_id = request.args.get("guild_id", None)
+
+    if not code:
+        abort(401, "No code granted...")
 
     if data_state["integration_type"] == 1:
         if guild_id:
