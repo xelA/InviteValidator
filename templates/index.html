@@ -28,12 +28,6 @@
 </section>
 
 <div class="box-container no-margin">
-  <p class="small-box">
-    <h2 class="no-margin">Before attempting to invite the bot...</h2>
-    Make sure that you have already requested for whitelist so you don't start scratching your head
-    when you see that you are not allowed to invite xelA. Thank you 💖
-  </p>
-
   <div class="box-container primary-bg no-margin">
 
     <div class="permission-container">
@@ -44,7 +38,7 @@
 
     <div class="permission-container">
       <input type="checkbox" id="user_install" name="user_install">
-      <label for="user_install" class="no-margin">User install</label>
+      <label for="user_install" class="no-margin"><span class="sun-flower-text">[ NEW ]</span> User install</label>
     </div>
     <i class="greyple-text">This will install xelA to your user account instead with limited commands, however it does not require whitelist!</i>
 
@@ -54,19 +48,18 @@
 
 <div class="box-container">
   <div class="buttons">
-    <a href="/oauth2/guild" id="invite" class="btn emerald-bg black-text">Server install</a>
+    <a href="/oauth2/guild" id="invite" class="btn emerald-bg black-text">Add xelA to a server</a>
   </div>
 </div>
 
 <script>
-
   const permissions = document.getElementById("permissions")
   const invite = document.getElementById("invite")
   const user_install = document.getElementById("user_install")
 
   function default_button() {
     invite.href = "/oauth2/guild"
-    invite.innerText = "Server install"
+    invite.innerText = "Add xelA to a server"
     invite.style.backgroundColor = "#2ecc71"
   }
 
@@ -74,7 +67,7 @@
     if (permissions.checked) {
       user_install.checked = false
       invite.href = "/oauth2/guild&permissions={{ permissions }}"
-      invite.innerText = "Server install, with bot role"
+      invite.innerText = "Add xelA to a server, with bot role"
       invite.style.backgroundColor = "#f1c40f"
     } else {
       default_button()
@@ -85,12 +78,11 @@
     if (user_install.checked) {
       permissions.checked = false
       invite.href = "/oauth2/user"
-      invite.innerText = "User install"
-      invite.style.backgroundColor = "#2ecc71"
+      invite.innerText = "Install xelA to your user account"
+      invite.style.backgroundColor = "#1abc9c"
     } else {
       default_button()
     }
   })
-
 </script>
 {% endblock %}
