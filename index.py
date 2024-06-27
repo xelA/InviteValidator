@@ -113,6 +113,7 @@ def api_validator(f):
 async def index():
     return await render_template(
         "index.html",
+        support=config["support_server"],
         permissions=config.get("permissions", 8),
         oauth_url=(
             f"https://discord.com/oauth2/authorize?client_id={config['client_id']}"

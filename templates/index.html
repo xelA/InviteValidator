@@ -12,6 +12,8 @@
     align-items: center;
   }
 
+  .small-space { margin-top: 0.5em; }
+
   input[type="checkbox"] {
     margin-right: .5em;
     margin-bottom: .1em;
@@ -27,62 +29,57 @@
   </div>
 </section>
 
-<div class="box-container no-margin">
-  <div class="box-container primary-bg no-margin">
+<div class="flex-grid">
 
-    <div class="permission-container">
-      <input type="checkbox" id="permissions" name="permissions">
-      <label for="permissions" class="no-margin">Enable bot role</label>
+  <div class="col-xs-6">
+    <div class="box-container primary-bg">
+      <h2 class="no-margin">Server install</h2>
+      <p>
+        <span class="sun-flower-text">Note: </span>
+        This option requires you to be whitelisted to use. You can request access to it
+        <a href="{{ support }}" class="emerald-text" target="_blank">here</a>.
+      </p>
+      <div class="permission-container">
+        <input type="checkbox" id="permissions" name="permissions">
+        <label for="permissions" class="no-margin">Enable bot role</label>
+      </div>
+      <i class="greyple-text">To remove the role later, you need to whitelist the bot again to update oauth.</i>
+      <div class="small-space">
+        <a href="/oauth2/guild" id="invite" class="btn emerald-bg black-text">Invite xelA to server</a>
+      </div>
     </div>
-    <i class="greyple-text">To remove the role later, you need to whitelist the bot again to update oauth.</i>
-
-    <div class="permission-container">
-      <input type="checkbox" id="user_install" name="user_install">
-      <label for="user_install" class="no-margin"><span class="sun-flower-text">[ NEW ]</span> User install</label>
-    </div>
-    <i class="greyple-text">This will install xelA to your user account instead with limited commands, however it does not require whitelist!</i>
-
   </div>
 
-</div>
-
-<div class="box-container">
-  <div class="buttons">
-    <a href="/oauth2/guild" id="invite" class="btn emerald-bg black-text">Add xelA to a server</a>
+  <div class="col-xs-6">
+    <div class="box-container primary-bg">
+      <h2 class="no-margin"><span class="sun-flower-text">[ NEW ]</span> User access</h2>
+      <i class="greyple-text">This one does not require whitelist, but has limited commands.</i>
+      <ul>
+        <li>Use commands in private messages</li>
+        <li>Use commands in servers without xelA</li>
+        <li><s>Flex xelA anywhere you want ✨</s></li>
+      </ul>
+      <div><a href="/oauth2/user" class="btn emerald-bg black-text">Add xelA to account</a></div>
+    </div>
   </div>
+
 </div>
 
 <script>
   const permissions = document.getElementById("permissions")
   const invite = document.getElementById("invite")
-  const user_install = document.getElementById("user_install")
-
-  function default_button() {
-    invite.href = "/oauth2/guild"
-    invite.innerText = "Add xelA to a server"
-    invite.style.backgroundColor = "#2ecc71"
-  }
 
   permissions.addEventListener("change", () => {
     if (permissions.checked) {
-      user_install.checked = false
       invite.href = "/oauth2/guild?permissions={{ permissions }}"
       invite.innerText = "Add xelA to a server, with bot role"
       invite.style.backgroundColor = "#f1c40f"
     } else {
-      default_button()
+      invite.href = "/oauth2/guild"
+      invite.innerText = "Add xelA to a server"
+      invite.style.backgroundColor = "#2ecc71"
     }
   })
 
-  user_install.addEventListener("change", () => {
-    if (user_install.checked) {
-      permissions.checked = false
-      invite.href = "/oauth2/user"
-      invite.innerText = "Install xelA to your user account"
-      invite.style.backgroundColor = "#1abc9c"
-    } else {
-      default_button()
-    }
-  })
 </script>
 {% endblock %}
